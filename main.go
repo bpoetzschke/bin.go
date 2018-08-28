@@ -2,7 +2,9 @@ package main
 
 import (
 	"fmt"
+	"os"
 
+	smw "github.com/bpoetzschke/go-slack-bingo/slack-middleware"
 	"github.com/kelseyhightower/envconfig"
 )
 
@@ -25,8 +27,12 @@ func parseConfig() (config, error) {
 }
 
 func main() {
-	_, err := parseConfig()
+	cfg, err := parseConfig()
 	if err != nil {
 		fmt.Printf("%s", err)
+		os.Exit(1)
 	}
+
+	mw := smw.NewMiddleware(cfg.SlackToken)
+	mw.Connect()
 }
