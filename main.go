@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	smw "github.com/bpoetzschke/go-slack-bingo/slack-middleware"
+	smw "github.com/bpoetzschke/bin.go/slack-middleware"
 	"github.com/kelseyhightower/envconfig"
 )
 
@@ -34,5 +34,10 @@ func main() {
 	}
 
 	mw := smw.NewMiddleware(cfg.SlackToken)
-	mw.Connect()
+	events := mw.Connect()
+	for evt := range events{
+		fmt.Printf("Received event: %+v", evt)
+	}
+
+	fmt.Printf("")
 }
