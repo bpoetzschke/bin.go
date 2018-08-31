@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"os"
 
 	smw "github.com/bpoetzschke/bin.go/slack-middleware"
@@ -10,6 +11,7 @@ import (
 
 type config struct {
 	SlackToken string `split_words:"true"`
+	Debug      bool   `default:"false"`
 }
 
 func parseConfig() (config, error) {
@@ -26,6 +28,12 @@ func parseConfig() (config, error) {
 	return cfg, nil
 }
 
+func setDebug(mw *smw.Middleware) {
+	logger := log.New(os.Stdout, "bin.go", log.Lshortfile|log.LstdFlags)
+
+	(*mw).SetLogger(logger)
+}
+
 func main() {
 	cfg, err := parseConfig()
 	if err != nil {
@@ -34,10 +42,13 @@ func main() {
 	}
 
 	mw := smw.NewMiddleware(cfg.SlackToken)
-	events := mw.Connect()
-	for evt := range events{
-		fmt.Printf("Received event: %+v", evt)
+
+	if cfg.Debug {
+		setDebug(&mw)
 	}
 
-	fmt.Printf("")
+	events := mw.Connect()
+	for evt := range events {
+		fmt.Printf("Received event: %+v", evt)
+	}
 }

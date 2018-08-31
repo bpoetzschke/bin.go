@@ -1,7 +1,7 @@
 package slack_middleware
 
 import (
-	"fmt"
+	"log"
 	"os"
 	"os/signal"
 	"strings"
@@ -18,6 +18,7 @@ const (
 type Middleware interface {
 	Connect() <-chan *slack.MessageEvent
 	GetBotInfo() *BotInfo
+	SetLogger(*log.Logger)
 }
 
 func NewMiddleware(slackToken string) Middleware {
@@ -36,46 +37,13 @@ type middleware struct {
 	eventChannel chan *slack.MessageEvent
 	botInfo      *BotInfo
 	signalCh     chan os.Signal
+	logProvider  *log.Logger
 }
-
-/*
-
-func main() {
-	cmd := Cmd{Closed: make(chan struct{})}
-
-	signalCh := make(chan os.Signal, 1)
-	signal.Notify(signalCh, os.Interrupt, syscall.SIGTERM)
-	log.Println("Listening for signals")
-
-	// Block until one of the signals above is received
-	<-signalCh
-	log.Println("Signal received, initializing clean shutdown...")
-	go cmd.Close()
-
-	// Block again until another signal is received, a shutdown timeout elapses,
-	// or the Command is gracefully closed
-	log.Println("Waiting for clean shutdown...")
-	select {
-	case <-signalCh:
-		log.Println("second signal received, initializing hard shutdown")
-	case <-time.After(time.Second * 30):
-		log.Println("time limit reached, initializing hard shutdown")
-	case <-cmd.Closed:
-		log.Println("server shutdown completed")
-	}
-
-	// goodbye.
-}
-
-*/
 
 func (mw *middleware) init() {
 	mw.slackApi = slack.New(mw.slackToken)
 
-	//logger := log.New(os.Stdout, "slack-bot: ", log.Lshortfile|log.LstdFlags)
-	//slack.SetLogger(logger)
-	//mw.slackApi.SetDebug(true)
-
+	// setup handling for graceful shutdown
 	mw.eventChannel = make(chan *slack.MessageEvent, 1)
 	mw.signalCh = make(chan os.Signal, 1)
 	signal.Notify(mw.signalCh, os.Interrupt, syscall.SIGTERM)
@@ -86,6 +54,7 @@ func (mw *middleware) Connect() <-chan *slack.MessageEvent {
 	go mw.slackRTM.ManageConnection()
 
 	go func() {
+		shutdownInitiated := false
 		for {
 			select {
 			case evt := <-mw.slackRTM.IncomingEvents:
@@ -98,9 +67,13 @@ func (mw *middleware) Connect() <-chan *slack.MessageEvent {
 				}
 
 			case <-mw.signalCh:
-				close(mw.eventChannel)
+				// handle repetitive SIGTERM event
+				if shutdownInitiated {
+					close(mw.eventChannel)
+					return
+				}
+				shutdownInitiated = true
 				mw.shutdown()
-				return
 
 			default:
 			}
@@ -112,6 +85,15 @@ func (mw *middleware) Connect() <-chan *slack.MessageEvent {
 
 func (mw *middleware) GetBotInfo() *BotInfo {
 	return mw.botInfo
+}
+
+func (mw *middleware) SetLogger(logProvider *log.Logger) {
+	if logProvider != nil {
+		slack.SetLogger(logProvider)
+		mw.slackApi.SetDebug(true)
+	} else {
+		mw.slackApi.SetDebug(false)
+	}
 }
 
 func (mw *middleware) handleConnect(payload interface{}) {
@@ -138,7 +120,14 @@ func (mw *middleware) handleMessageEvent(payload interface{}) {
 }
 
 func (mw *middleware) shutdown() {
-	fmt.Println("Graceful shutdown!")
+	mw.log("Graceful shutdown!")
 
 	mw.slackRTM.Disconnect()
+	close(mw.eventChannel)
+}
+
+func (mw *middleware) log(msg string) {
+	if mw.logProvider != nil {
+		mw.logProvider.Print(msg)
+	}
 }
