@@ -5,6 +5,10 @@ import (
 	"log"
 	"os"
 
+	"github.com/bpoetzschke/bin.go/game/word_manager"
+
+	"github.com/bpoetzschke/bin.go/game"
+
 	smw "github.com/bpoetzschke/bin.go/slack-middleware"
 	"github.com/kelseyhightower/envconfig"
 )
@@ -29,7 +33,7 @@ func parseConfig() (config, error) {
 }
 
 func setDebug(mw *smw.Middleware) {
-	logger := log.New(os.Stdout, "bin.go", log.Lshortfile|log.LstdFlags)
+	logger := log.New(os.Stdout, "bin.go: ", log.Lshortfile|log.LstdFlags)
 
 	(*mw).SetLogger(logger)
 }
@@ -47,8 +51,7 @@ func main() {
 		setDebug(&mw)
 	}
 
-	events := mw.Connect()
-	for evt := range events {
-		fmt.Printf("Received event: %+v", evt)
-	}
+	word_manager.NewWordManager()
+
+	game.NewGameLoop(mw.Connect()).Run()
 }

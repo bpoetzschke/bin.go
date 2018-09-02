@@ -120,7 +120,7 @@ func (mw *middleware) handleMessageEvent(payload interface{}) {
 }
 
 func (mw *middleware) shutdown() {
-	mw.log("Graceful shutdown!")
+	mw.log("Attempting graceful shutdown!")
 
 	mw.slackRTM.Disconnect()
 	close(mw.eventChannel)
