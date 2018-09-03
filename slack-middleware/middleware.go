@@ -3,9 +3,7 @@ package slack_middleware
 import (
 	"log"
 	"os"
-	"os/signal"
 	"strings"
-	"syscall"
 
 	"github.com/nlopes/slack"
 )
@@ -42,11 +40,6 @@ type middleware struct {
 
 func (mw *middleware) init() {
 	mw.slackApi = slack.New(mw.slackToken)
-
-	// setup handling for graceful shutdown
-	mw.eventChannel = make(chan *slack.MessageEvent, 1)
-	mw.signalCh = make(chan os.Signal, 1)
-	signal.Notify(mw.signalCh, os.Interrupt, syscall.SIGTERM)
 }
 
 func (mw *middleware) Connect() <-chan *slack.MessageEvent {
@@ -54,7 +47,6 @@ func (mw *middleware) Connect() <-chan *slack.MessageEvent {
 	go mw.slackRTM.ManageConnection()
 
 	go func() {
-		shutdownInitiated := false
 		for {
 			select {
 			case evt := <-mw.slackRTM.IncomingEvents:
@@ -65,15 +57,6 @@ func (mw *middleware) Connect() <-chan *slack.MessageEvent {
 					mw.handleMessageEvent(evt.Data)
 				default:
 				}
-
-			case <-mw.signalCh:
-				// handle repetitive SIGTERM event
-				if shutdownInitiated {
-					close(mw.eventChannel)
-					return
-				}
-				shutdownInitiated = true
-				mw.shutdown()
 
 			default:
 			}
