@@ -1,8 +1,7 @@
 package game
 
 import (
-	"fmt"
-
+	"github.com/bpoetzschke/bin.go/logger"
 	"github.com/nlopes/slack"
 )
 
@@ -22,6 +21,6 @@ type gameLoop struct {
 
 func (gl *gameLoop) Run() {
 	for message := range gl.messageChan {
-		fmt.Printf("Received message: %+v", message)
+		logger.Debug("Received message: %s", message)
 	}
 }

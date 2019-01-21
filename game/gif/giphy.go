@@ -5,10 +5,11 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"net/url"
 )
 
 const (
-	giphyBaseURI   = "http://api.giphy.com/v1/gifs/%s?api_key=dc6zaTOxFJmzC&%s"
+	giphyBaseURI   = "http://api.giphy.com/v1/gifs/%s?api_key=dc6zaTOxFJmzC%s"
 	giphyRandomApi = "random"
 )
 
@@ -33,7 +34,7 @@ type giphyMeta struct {
 }
 
 func (g *giphy) Random(searchQuery string) (string, error) {
-	return g.doRequest(giphyRandomApi, fmt.Sprintf("&tag=%s", searchQuery))
+	return g.doRequest(giphyRandomApi, fmt.Sprintf("&tag=%s", url.QueryEscape(searchQuery)))
 }
 
 func (g *giphy) doRequest(api string, searchQuery string) (string, error) {

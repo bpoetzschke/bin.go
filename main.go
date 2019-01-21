@@ -2,8 +2,9 @@ package main
 
 import (
 	"fmt"
-	"log"
 	"os"
+
+	"github.com/bpoetzschke/bin.go/logger"
 
 	"github.com/bpoetzschke/bin.go/game/word_manager"
 
@@ -32,10 +33,8 @@ func parseConfig() (config, error) {
 	return cfg, nil
 }
 
-func setDebug(mw *smw.Middleware) {
-	logger := log.New(os.Stdout, "bin.go: ", log.Lshortfile|log.LstdFlags)
-
-	(*mw).SetLogger(logger)
+func setDebug() {
+	logger.Enable()
 }
 
 func main() {
@@ -48,7 +47,7 @@ func main() {
 	mw := smw.NewMiddleware(cfg.SlackToken)
 
 	if cfg.Debug {
-		setDebug(&mw)
+		setDebug()
 	}
 
 	word_manager.NewWordManager()

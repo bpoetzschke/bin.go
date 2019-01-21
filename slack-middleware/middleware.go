@@ -5,6 +5,8 @@ import (
 	"os"
 	"strings"
 
+	"github.com/bpoetzschke/bin.go/logger"
+
 	"github.com/nlopes/slack"
 )
 
@@ -16,7 +18,6 @@ const (
 type Middleware interface {
 	Connect() <-chan *slack.MessageEvent
 	GetBotInfo() *BotInfo
-	SetLogger(*log.Logger)
 }
 
 func NewMiddleware(slackToken string) Middleware {
@@ -40,6 +41,7 @@ type middleware struct {
 
 func (mw *middleware) init() {
 	mw.slackApi = slack.New(mw.slackToken)
+	mw.eventChannel = make(chan *slack.MessageEvent)
 }
 
 func (mw *middleware) Connect() <-chan *slack.MessageEvent {
@@ -70,15 +72,6 @@ func (mw *middleware) GetBotInfo() *BotInfo {
 	return mw.botInfo
 }
 
-func (mw *middleware) SetLogger(logProvider *log.Logger) {
-	if logProvider != nil {
-		slack.SetLogger(logProvider)
-		mw.slackApi.SetDebug(true)
-	} else {
-		mw.slackApi.SetDebug(false)
-	}
-}
-
 func (mw *middleware) handleConnect(payload interface{}) {
 	connectedEvt := payload.(*slack.ConnectedEvent)
 
@@ -103,14 +96,8 @@ func (mw *middleware) handleMessageEvent(payload interface{}) {
 }
 
 func (mw *middleware) shutdown() {
-	mw.log("Attempting graceful shutdown!")
+	logger.Debug("Attempting graceful shutdown!")
 
 	mw.slackRTM.Disconnect()
 	close(mw.eventChannel)
-}
-
-func (mw *middleware) log(msg string) {
-	if mw.logProvider != nil {
-		mw.logProvider.Print(msg)
-	}
 }

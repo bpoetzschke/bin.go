@@ -2,9 +2,10 @@ package word_manager
 
 import (
 	"bufio"
-	"fmt"
 	"os"
 	"sync"
+
+	"github.com/bpoetzschke/bin.go/logger"
 
 	"github.com/bpoetzschke/bin.go/game/gif"
 )
@@ -38,11 +39,11 @@ func (wm *wordManager) init() {
 func (wm *wordManager) loadWords() {
 	words, err := wm.loadInitial()
 	if err != nil {
-		fmt.Printf("Error while loading words: %s", err)
+		logger.Error("Error while loading words: %s", err)
 	}
 
 	chunkSize := (len(words) / concurrency) + 1
-	fmt.Printf("Chunk size: %d\n", chunkSize)
+	logger.Debug("Chunk size: %d", chunkSize)
 
 	chunkIndex := 0
 
@@ -57,13 +58,11 @@ func (wm *wordManager) loadWords() {
 		}
 
 		go func(chunk int, start int, end int) {
-			//fmt.Printf("Handling chunk %d start %d end %d\n", chunk, start, end)
 			for i := start; i <= end; i++ {
-				//fmt.Printf("Process index: %d\n", i)
 				url, err := wm.gifGenerator.Random(words[i])
 				if err != nil {
-					fmt.Printf("Error while fetching gif for word %q: %s\n", words[i], err)
-					return
+					logger.Warning("Could not fetch gif for word %q: %s", words[i], err)
+					continue
 				}
 
 				wordMutex.Lock()

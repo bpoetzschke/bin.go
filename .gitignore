@@ -4,6 +4,7 @@
 *.dll
 *.so
 *.dylib
+bin.go
 go-slack-bingo
 
 # Test binary, build with `go test -c`
