@@ -29,7 +29,7 @@ func NewWordManager() WordManager {
 
 type wordManager struct {
 	gifGenerator gif.Gif
-	words        []word
+	words        []Word
 }
 
 func (wm *wordManager) init() {
@@ -66,8 +66,8 @@ func (wm *wordManager) loadWords() {
 				}
 
 				wordMutex.Lock()
-				wm.words = append(wm.words, word{
-					Word:   words[i],
+				wm.words = append(wm.words, Word{
+					Value:  words[i],
 					GifUrl: url,
 				})
 				wordMutex.Unlock()
