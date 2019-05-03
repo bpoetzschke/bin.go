@@ -7,7 +7,7 @@ import (
 
 	"github.com/bpoetzschke/bin.go/logger"
 
-	"github.com/bpoetzschke/bin.go/game/gif"
+	"github.com/bpoetzschke/bin.go/gif"
 )
 
 const (
@@ -59,7 +59,7 @@ func (wm *wordManager) loadWords() {
 
 		go func(chunk int, start int, end int) {
 			for i := start; i <= end; i++ {
-				url, err := wm.gifGenerator.Random(words[i])
+				url, _, err := wm.gifGenerator.Random(words[i])
 				if err != nil {
 					logger.Warning("Could not fetch gif for word %q: %s", words[i], err)
 					continue
