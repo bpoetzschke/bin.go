@@ -10,6 +10,7 @@ require (
 	github.com/kelseyhightower/envconfig v1.3.0
 	github.com/nlopes/slack v0.5.0
 	github.com/pkg/errors v0.8.1 // indirect
+	github.com/stretchr/testify v1.3.0
 	golang.org/x/crypto v0.0.0-20190426145343-a29dc8fdc734 // indirect
-	golang.org/x/sys v0.0.0-20190429190828-d89cdac9e872 // indirect
+	golang.org/x/sys v0.0.0-20190502175342-a43fa875dd82 // indirect
 )
