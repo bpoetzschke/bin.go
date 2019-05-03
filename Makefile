@@ -1,4 +1,4 @@
-.PHONY: build run
+.PHONY: build run test
 
 SLACK_TOKEN ?=
 
@@ -9,3 +9,6 @@ build:
 
 run:
 	go run main.go
+
+test:
+	go test ./...

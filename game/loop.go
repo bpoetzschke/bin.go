@@ -21,6 +21,6 @@ type gameLoop struct {
 
 func (gl *gameLoop) Run() {
 	for message := range gl.messageChan {
-		logger.Debug("Received message: %s", message)
+		logger.Debug("Received message: %v", message)
 	}
 }
