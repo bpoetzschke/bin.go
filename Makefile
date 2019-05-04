@@ -1,4 +1,4 @@
-.PHONY: build run test
+.PHONY: build run test run-infra
 
 SLACK_TOKEN ?=
 
@@ -12,3 +12,11 @@ run:
 
 test:
 	go test ./...
+
+run-infra:
+	docker run -d -p 5432:5432 \
+        -e POSTGRES_PASSWORD=postgres \
+        -e POSTGRES_USER=postgres \
+        -e POSTGRES_DB=bin.go \
+        -v pgdata:/var/lib/postgresql/data \
+        postgres
