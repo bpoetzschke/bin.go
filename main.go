@@ -5,13 +5,11 @@ import (
 	"os"
 
 	"github.com/bpoetzschke/bin.go/logger"
-
 	"github.com/bpoetzschke/bin.go/game/word_manager"
-
 	"github.com/bpoetzschke/bin.go/game"
+	"github.com/kelseyhightower/envconfig"
 
 	smw "github.com/bpoetzschke/bin.go/slack-middleware"
-	"github.com/kelseyhightower/envconfig"
 )
 
 type config struct {
