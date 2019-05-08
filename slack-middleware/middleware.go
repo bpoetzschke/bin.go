@@ -2,21 +2,13 @@ package slack_middleware
 
 import (
 	"log"
-	"os"
 	"strings"
-
-	"github.com/bpoetzschke/bin.go/logger"
 
 	"github.com/nlopes/slack"
 )
 
-const (
-	MessageTypeDirectMessage = "direct_message"
-	MessageTypeSelfMessage   = "self_message"
-)
-
 type Middleware interface {
-	Connect() <-chan *slack.MessageEvent
+	Connect() <-chan *Message
 	GetBotInfo() *BotInfo
 }
 
@@ -33,18 +25,17 @@ type middleware struct {
 	slackApi *slack.Client
 	slackRTM *slack.RTM
 
-	eventChannel chan *slack.MessageEvent
+	eventChannel chan *Message
 	botInfo      *BotInfo
-	signalCh     chan os.Signal
 	logProvider  *log.Logger
 }
 
 func (mw *middleware) init() {
 	mw.slackApi = slack.New(mw.slackToken)
-	mw.eventChannel = make(chan *slack.MessageEvent)
+	mw.eventChannel = make(chan *Message)
 }
 
-func (mw *middleware) Connect() <-chan *slack.MessageEvent {
+func (mw *middleware) Connect() <-chan *Message {
 	mw.slackRTM = mw.slackApi.NewRTM()
 	go mw.slackRTM.ManageConnection()
 
@@ -82,22 +73,26 @@ func (mw *middleware) handleConnect(payload interface{}) {
 }
 
 func (mw *middleware) handleMessageEvent(payload interface{}) {
-	msg := payload.(*slack.MessageEvent)
+	rawMsg := payload.(*slack.MessageEvent)
+	var messageType = MessageTypeUnknowMessage
 
-	if strings.HasPrefix(msg.Channel, "D") {
-		if msg.User == mw.botInfo.ID {
-			msg.Type = MessageTypeSelfMessage
+	if strings.HasPrefix(rawMsg.Channel, "D") {
+		if rawMsg.User == mw.botInfo.ID {
+			messageType = MessageTypeSelfMessage
 		} else {
-			msg.Type = MessageTypeDirectMessage
+			messageType = MessageTypeDirectMessage
 		}
+	} else if strings.HasPrefix(rawMsg.Channel, "C") {
+		messageType = MessageTypeChannelMessage
 	}
 
-	mw.eventChannel <- msg
-}
+	message := Message{
+		Type:      messageType,
+		Message:   rawMsg.Text,
+		Timestamp: rawMsg.Timestamp,
+		Channel:   rawMsg.Channel,
+		rtm:       mw.slackRTM,
+	}
 
-func (mw *middleware) shutdown() {
-	logger.Debug("Attempting graceful shutdown!")
-
-	mw.slackRTM.Disconnect()
-	close(mw.eventChannel)
+	mw.eventChannel <- &message
 }
