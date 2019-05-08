@@ -2,21 +2,21 @@ package game
 
 import (
 	"github.com/bpoetzschke/bin.go/logger"
-	"github.com/nlopes/slack"
+	slack_middleware "github.com/bpoetzschke/bin.go/slack-middleware"
 )
 
 type GameLoop interface {
 	Run()
 }
 
-func NewGameLoop(messageChan <-chan *slack.MessageEvent) GameLoop {
+func NewGameLoop(messageChan <-chan *slack_middleware.Message) GameLoop {
 	return &gameLoop{
 		messageChan: messageChan,
 	}
 }
 
 type gameLoop struct {
-	messageChan <-chan *slack.MessageEvent
+	messageChan <-chan *slack_middleware.Message
 }
 
 func (gl *gameLoop) Run() {
