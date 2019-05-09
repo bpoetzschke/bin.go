@@ -15,10 +15,12 @@ func NewInMemoryStorage() Storage {
 
 type inMemoryStorage struct {
 	wordMap map[string]models.Word
+	gameMap map[string]*models.Game
 }
 
 func (ims *inMemoryStorage) init() {
 	ims.wordMap = make(map[string]models.Word)
+	ims.gameMap = make(map[string]*models.Game)
 }
 
 func (ims *inMemoryStorage) LoadWordList() ([]models.Word, error) {
@@ -42,17 +44,19 @@ func (ims *inMemoryStorage) AddWord(word models.Word) (bool, error) {
 	return true, nil
 }
 
-//func (ims *inMemoryStorage) AddWords(words []models.Word) (bool, error) {
-//	for _, word := range words {
-//		success, err := ims.AddWord(word)
-//
-//		if success == false || err != nil {
-//			return success, err
-//		}
-//	}
-//
-//	return true, nil
-//}
+func (ims *inMemoryStorage) LoadCurrentGame() (models.Game, error) {
 
-func (ims *inMemoryStorage) LoadCurrentGame() {}
-func (ims *inMemoryStorage) SaveGame() {}
+	for _, gamePtr := range ims.gameMap {
+		if gamePtr.FinishedAt == nil {
+			return *gamePtr, nil
+		}
+	}
+
+	return models.Game{}, nil
+}
+
+func (ims *inMemoryStorage) SaveGame(game models.Game) error {
+	ims.gameMap[game.ID] = &game
+
+	return nil
+}

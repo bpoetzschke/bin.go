@@ -13,8 +13,8 @@ type WordStorage interface {
 }
 
 type GameStorage interface {
-	LoadCurrentGame()
-	SaveGame()
+	LoadCurrentGame() (models.Game, error)
+	SaveGame(models.Game) error
 }
 
 func NewStorage() Storage {

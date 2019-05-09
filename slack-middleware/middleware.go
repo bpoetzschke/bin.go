@@ -32,6 +32,7 @@ type middleware struct {
 
 func (mw *middleware) init() {
 	mw.slackApi = slack.New(mw.slackToken)
+	// TODO limit amount of items in channel
 	mw.eventChannel = make(chan *Message)
 }
 
