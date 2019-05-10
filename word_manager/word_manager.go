@@ -6,6 +6,7 @@ import (
 	"sync"
 
 	"github.com/bpoetzschke/bin.go/logger"
+	"github.com/bpoetzschke/bin.go/models"
 
 	"github.com/bpoetzschke/bin.go/gif"
 )
@@ -16,38 +17,36 @@ const (
 )
 
 type WordManager interface {
+	LoadWords() ([]models.Word, error)
 }
 
 func NewWordManager() WordManager {
 	wm := wordManager{
 		gifGenerator: gif.NewGiphy(),
 	}
-	wm.init()
 
 	return &wm
 }
 
 type wordManager struct {
 	gifGenerator gif.Gif
-	words        []Word
 }
 
-func (wm *wordManager) init() {
-	wm.loadWords()
-}
-
-func (wm *wordManager) loadWords() {
-	words, err := wm.loadInitial()
+func (wm *wordManager) LoadWords() ([]models.Word, error) {
+	wordList, err := wm.loadInitial()
 	if err != nil {
 		logger.Error("Error while loading words: %s", err)
 	}
 
-	chunkSize := (len(words) / concurrency) + 1
+	chunkSize := (len(wordList) / concurrency) + 1
 	logger.Debug("Chunk size: %d", chunkSize)
+
+	words := make([]models.Word, 0)
 
 	chunkIndex := 0
 
 	wordMutex := sync.Mutex{}
+	waitGroup := sync.WaitGroup{}
 
 	for chunkStart := 0; chunkStart < len(words); {
 
@@ -57,28 +56,35 @@ func (wm *wordManager) loadWords() {
 			end = len(words) - 1
 		}
 
+		waitGroup.Add(1)
+
 		go func(chunk int, start int, end int) {
 			for i := start; i <= end; i++ {
-				url, _, err := wm.gifGenerator.Random(words[i])
+				url, _, err := wm.gifGenerator.Random(wordList[i])
 				if err != nil {
 					logger.Warning("Could not fetch gif for word %q: %s", words[i], err)
 					continue
 				}
 
 				wordMutex.Lock()
-				wm.words = append(wm.words, Word{
-					Value:  words[i],
+				words = append(words, models.Word{
+					Value:  wordList[i],
 					GifUrl: url,
 				})
 				wordMutex.Unlock()
 
 			}
+
+			waitGroup.Done()
 		}(chunkIndex, chunkStart, end)
 
 		// update chunk start for next iteration of the loop
 		chunkStart = end + 1
 		chunkIndex++
 	}
+
+	waitGroup.Wait()
+	return words, nil
 }
 
 func (wm *wordManager) loadInitial() ([]string, error) {

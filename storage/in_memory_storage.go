@@ -44,15 +44,15 @@ func (ims *inMemoryStorage) AddWord(word models.Word) (bool, error) {
 	return true, nil
 }
 
-func (ims *inMemoryStorage) LoadCurrentGame() (models.Game, error) {
+func (ims *inMemoryStorage) LoadCurrentGame() (models.Game, bool, error) {
 
 	for _, gamePtr := range ims.gameMap {
 		if gamePtr.FinishedAt == nil {
-			return *gamePtr, nil
+			return *gamePtr, true, nil
 		}
 	}
 
-	return models.Game{}, nil
+	return models.Game{}, false, nil
 }
 
 func (ims *inMemoryStorage) SaveGame(game models.Game) error {

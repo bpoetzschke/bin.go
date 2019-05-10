@@ -40,8 +40,9 @@ func TestInMemoryGameStorage(t *testing.T) {
 	ims := storage.NewInMemoryStorage()
 
 	// when retrieving current we should get nil because there is no game stored
-	game, err := ims.LoadCurrentGame()
+	game, found, err := ims.LoadCurrentGame()
 	require.NoError(t, err)
+	require.False(t, found)
 	require.Empty(t, game)
 
 	// create a game and store it
@@ -53,8 +54,9 @@ func TestInMemoryGameStorage(t *testing.T) {
 	require.NoError(t, err)
 
 	// retrieve current game
-	value, err := ims.LoadCurrentGame()
+	value, found, err := ims.LoadCurrentGame()
 	require.NoError(t, err)
+	require.True(t, found)
 	require.EqualValues(t, game, value)
 
 	// update game and set it to finish and retrieve game afterwards --> current game should be empty because there is
@@ -64,7 +66,8 @@ func TestInMemoryGameStorage(t *testing.T) {
 	err = ims.SaveGame(game)
 	require.NoError(t, err)
 
-	value, err = ims.LoadCurrentGame()
+	value, found, err = ims.LoadCurrentGame()
 	require.NoError(t, err)
+	require.False(t, found)
 	require.Empty(t, value)
 }

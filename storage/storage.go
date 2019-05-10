@@ -13,7 +13,7 @@ type WordStorage interface {
 }
 
 type GameStorage interface {
-	LoadCurrentGame() (models.Game, error)
+	LoadCurrentGame() (models.Game, bool, error)
 	SaveGame(models.Game) error
 }
 

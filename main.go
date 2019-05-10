@@ -4,12 +4,12 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/bpoetzschke/bin.go/logger"
-	"github.com/bpoetzschke/bin.go/game/word_manager"
-	"github.com/bpoetzschke/bin.go/game"
 	"github.com/kelseyhightower/envconfig"
 
+	"github.com/bpoetzschke/bin.go/game"
+	"github.com/bpoetzschke/bin.go/logger"
 	smw "github.com/bpoetzschke/bin.go/slack-middleware"
+	"github.com/bpoetzschke/bin.go/storage"
 )
 
 type config struct {
@@ -48,7 +48,14 @@ func main() {
 		setDebug()
 	}
 
-	word_manager.NewWordManager()
+	game, err := game.NewGameLoop(
+		mw,
+		storage.NewInMemoryStorage(),
+	)
+	if err != nil {
+		logger.Error("Error while starting game. %s", err)
+		return
+	}
 
-	game.NewGameLoop(mw.Connect()).Run()
+	game.Run()
 }
