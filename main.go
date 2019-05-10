@@ -10,6 +10,7 @@ import (
 	"github.com/bpoetzschke/bin.go/logger"
 	smw "github.com/bpoetzschke/bin.go/slack-middleware"
 	"github.com/bpoetzschke/bin.go/storage"
+	"github.com/bpoetzschke/bin.go/word_manager"
 )
 
 type config struct {
@@ -51,6 +52,7 @@ func main() {
 	game, err := game.NewGameLoop(
 		mw,
 		storage.NewInMemoryStorage(),
+		word_manager.NewWordManager(),
 	)
 	if err != nil {
 		logger.Error("Error while starting game. %s", err)

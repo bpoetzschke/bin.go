@@ -21,6 +21,10 @@ func Debug(format string, args ...interface{}) {
 	StandardLogger().Debugf(format, args...)
 }
 
+func Info(format string, args ...interface{}) {
+	StandardLogger().Infof(format, args)
+}
+
 func Warning(format string, args ...interface{}) {
 	StandardLogger().Warningf(format, args...)
 }

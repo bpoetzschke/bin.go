@@ -17,7 +17,8 @@ const (
 )
 
 type WordManager interface {
-	LoadWords() ([]models.Word, error)
+	LoadInitialWords() []models.Word
+	GetGifForWord(word string) (string, error)
 }
 
 func NewWordManager() WordManager {
@@ -32,8 +33,14 @@ type wordManager struct {
 	gifGenerator gif.Gif
 }
 
-func (wm *wordManager) LoadWords() ([]models.Word, error) {
-	wordList, err := wm.loadInitial()
+func (wm *wordManager) GetGifForWord(word string) (string, error) {
+	url, _, err := wm.gifGenerator.Random(word)
+
+	return url, err
+}
+
+func (wm *wordManager) LoadInitialWords() []models.Word {
+	wordList, err := wm.loadFromInitialFile()
 	if err != nil {
 		logger.Error("Error while loading words: %s", err)
 	}
@@ -48,23 +55,31 @@ func (wm *wordManager) LoadWords() ([]models.Word, error) {
 	wordMutex := sync.Mutex{}
 	waitGroup := sync.WaitGroup{}
 
-	for chunkStart := 0; chunkStart < len(words); {
+	chunkStart := 0
+
+	for chunkStart < len(wordList) {
 
 		end := chunkStart + chunkSize - 1
 
-		if end > len(words)-1 {
-			end = len(words) - 1
+		if end > len(wordList)-1 {
+			end = len(wordList) - 1
 		}
 
 		waitGroup.Add(1)
 
 		go func(chunk int, start int, end int) {
 			for i := start; i <= end; i++ {
-				url, _, err := wm.gifGenerator.Random(wordList[i])
+				url, found, err := wm.gifGenerator.Random(wordList[i])
 				if err != nil {
-					logger.Warning("Could not fetch gif for word %q: %s", words[i], err)
+					logger.Warning("Could not fetch gif for word %q: %s", wordList[i], err)
 					continue
 				}
+
+				if !found {
+					logger.Info("Could not find gif for word %q.", wordList[i])
+				}
+
+				logger.Debug("Loaded word: %q, url %q", wordList[i], url)
 
 				wordMutex.Lock()
 				words = append(words, models.Word{
@@ -84,10 +99,10 @@ func (wm *wordManager) LoadWords() ([]models.Word, error) {
 	}
 
 	waitGroup.Wait()
-	return words, nil
+	return words
 }
 
-func (wm *wordManager) loadInitial() ([]string, error) {
+func (wm *wordManager) loadFromInitialFile() ([]string, error) {
 	file, err := os.Open(initialWordFile)
 	if err != nil {
 		return nil, err

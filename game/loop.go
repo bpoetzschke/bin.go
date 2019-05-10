@@ -9,6 +9,7 @@ import (
 	"github.com/bpoetzschke/bin.go/models"
 	slack_middleware "github.com/bpoetzschke/bin.go/slack-middleware"
 	"github.com/bpoetzschke/bin.go/storage"
+	"github.com/bpoetzschke/bin.go/word_manager"
 )
 
 type GameLoop interface {
@@ -18,10 +19,12 @@ type GameLoop interface {
 func NewGameLoop(
 	slackMW slack_middleware.Middleware,
 	storage storage.Storage,
+	wordManager word_manager.WordManager,
 ) (GameLoop, error) {
 	gl := gameLoop{
-		slackMW: slackMW,
-		storage: storage,
+		slackMW:     slackMW,
+		storage:     storage,
+		wordManager: wordManager,
 	}
 
 	if err := gl.init(); err != nil {
@@ -33,6 +36,7 @@ func NewGameLoop(
 
 type gameLoop struct {
 	slackMW     slack_middleware.Middleware
+	wordManager word_manager.WordManager
 	storage     storage.Storage
 	currentGame *models.Game
 }
@@ -71,9 +75,12 @@ func (gl *gameLoop) startNewGame() error {
 	}
 
 	words, err := gl.storage.LoadWordList()
-	// TODO if word list is empty load initial word list
 	if err != nil {
 		logger.Error("Error while loading word list. %s", err)
+	}
+
+	if len(words) == 0 {
+		words = gl.wordManager.LoadInitialWords()
 	}
 
 	logger.Debug("Starting new game.")
