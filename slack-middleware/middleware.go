@@ -5,11 +5,14 @@ import (
 	"strings"
 
 	"github.com/nlopes/slack"
+
+	"github.com/bpoetzschke/bin.go/logger"
 )
 
 type Middleware interface {
-	Connect() <-chan *Message
+	Connect() <-chan *IncomingMessage
 	GetBotInfo() *BotInfo
+	PostMessage(msg OutgoingMessage) error
 }
 
 func NewMiddleware(slackToken string) Middleware {
@@ -25,7 +28,7 @@ type middleware struct {
 	slackApi *slack.Client
 	slackRTM *slack.RTM
 
-	eventChannel chan *Message
+	eventChannel chan *IncomingMessage
 	botInfo      *BotInfo
 	logProvider  *log.Logger
 }
@@ -33,10 +36,10 @@ type middleware struct {
 func (mw *middleware) init() {
 	mw.slackApi = slack.New(mw.slackToken)
 	// TODO limit amount of items in channel
-	mw.eventChannel = make(chan *Message)
+	mw.eventChannel = make(chan *IncomingMessage)
 }
 
-func (mw *middleware) Connect() <-chan *Message {
+func (mw *middleware) Connect() <-chan *IncomingMessage {
 	mw.slackRTM = mw.slackApi.NewRTM()
 	go mw.slackRTM.ManageConnection()
 
@@ -64,6 +67,28 @@ func (mw *middleware) GetBotInfo() *BotInfo {
 	return mw.botInfo
 }
 
+func (mw *middleware) PostMessage(msg OutgoingMessage) error {
+	msgOptions := []slack.MsgOption{
+		slack.MsgOptionText(msg.Message, false),
+		slack.MsgOptionUsername("bingo"),
+		slack.MsgOptionAsUser(true),
+	}
+
+	attachments := []slack.Attachment{}
+
+	for _, attachment := range msg.Attachments {
+		attachments = append(attachments, slack.Attachment{
+			ImageURL: attachment,
+		})
+	}
+
+	msgOptions = append(msgOptions, slack.MsgOptionAttachments(attachments...))
+
+	_, _, err := mw.slackRTM.PostMessage(msg.Channel, msgOptions...)
+
+	return err
+}
+
 func (mw *middleware) handleConnect(payload interface{}) {
 	connectedEvt := payload.(*slack.ConnectedEvent)
 
@@ -75,6 +100,14 @@ func (mw *middleware) handleConnect(payload interface{}) {
 
 func (mw *middleware) handleMessageEvent(payload interface{}) {
 	rawMsg := payload.(*slack.MessageEvent)
+
+	if mw.botInfo == nil {
+		logger.Warning("Could not determine whether message came from bot user.")
+	} else if rawMsg.User == mw.botInfo.ID {
+		logger.Debug("Skip handling message since it came from bot user.")
+		return
+	}
+
 	var messageType = MessageTypeUnknowMessage
 
 	if strings.HasPrefix(rawMsg.Channel, "D") {
@@ -87,11 +120,14 @@ func (mw *middleware) handleMessageEvent(payload interface{}) {
 		messageType = MessageTypeChannelMessage
 	}
 
-	message := Message{
+	message := IncomingMessage{
+		BaseMessage: BaseMessage{
+			Message: rawMsg.Text,
+			Channel: rawMsg.Channel,
+		},
 		Type:      messageType,
-		Message:   rawMsg.Text,
 		Timestamp: rawMsg.Timestamp,
-		Channel:   rawMsg.Channel,
+		UserID:    rawMsg.User,
 		rtm:       mw.slackRTM,
 	}
 

@@ -18,10 +18,20 @@ const (
 	MessageTypeUnknowMessage  = MessageType("unknown")
 )
 
-type Message struct {
+type BaseMessage struct {
+	Message string
+	Channel string
+}
+
+type IncomingMessage struct {
+	BaseMessage
 	Type      MessageType
-	Message   string
 	Timestamp string
-	Channel   string
+	UserID    string
 	rtm       *slack.RTM
+}
+
+type OutgoingMessage struct {
+	BaseMessage
+	Attachments []string
 }

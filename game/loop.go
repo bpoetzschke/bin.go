@@ -1,6 +1,7 @@
 package game
 
 import (
+	"strings"
 	"time"
 
 	"github.com/twinj/uuid"
@@ -60,6 +61,10 @@ func (gl *gameLoop) init() error {
 func (gl *gameLoop) Run() {
 	for message := range gl.slackMW.Connect() {
 		logger.Debug("Received message: %v", message)
+		switch message.Type {
+		case slack_middleware.MessageTypeChannelMessage:
+			gl.handleChannelMessage(message)
+		}
 	}
 }
 
@@ -96,4 +101,48 @@ func (gl *gameLoop) startNewGame() error {
 	}
 
 	return nil
+}
+
+func (gl *gameLoop) handleChannelMessage(msg *slack_middleware.IncomingMessage) {
+	var foundWords []models.Word
+
+	for _, word := range gl.currentGame.RemainingWords {
+		if strings.Contains(msg.Message, word.Value) {
+			if word.AddedBy != msg.UserID {
+				logger.Debug("Found word: %q", word.Value)
+				foundWords = append(foundWords, word)
+			} else {
+				logger.Debug("User %q added word %q. Not going to ack this.", msg.UserID, word.Value)
+			}
+		}
+	}
+
+	if len(foundWords) == 0 {
+		logger.Debug("Didn't found any word in message:\n%s", msg.Message)
+		if err := gl.react("speak_no_evil", msg); err != nil {
+			logger.Error("Error while reacting to message %#v. Error: %s", msg, err)
+		}
+		return
+	}
+
+	if err := gl.react("boom", msg); err != nil {
+		logger.Error("Error while reacting to message %#v. Error: %s", msg, err)
+	}
+
+	answer := slack_middleware.OutgoingMessage{
+		BaseMessage: slack_middleware.BaseMessage{
+			Message: "hallo",
+			Channel: msg.Channel,
+		},
+	}
+
+	for _, found := range foundWords {
+		answer.Attachments = append(answer.Attachments, found.GifUrl)
+	}
+
+	gl.slackMW.PostMessage(answer)
+}
+
+func (gl *gameLoop) react(emoji string, msg *slack_middleware.IncomingMessage) error {
+	return msg.React(emoji)
 }
