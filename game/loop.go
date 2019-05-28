@@ -107,7 +107,7 @@ func (gl *gameLoop) handleChannelMessage(msg *slack_middleware.IncomingMessage) 
 	var foundWords []models.Word
 
 	for _, word := range gl.currentGame.RemainingWords {
-		if strings.Contains(msg.Message, word.Value) {
+		if strings.Contains(strings.ToLower(msg.Message), strings.ToLower(word.Value)) {
 			if word.AddedBy != msg.UserID {
 				logger.Debug("Found word: %q", word.Value)
 				foundWords = append(foundWords, word)
