@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"os"
 	"sync"
+	"time"
 
 	"github.com/bpoetzschke/bin.go/logger"
 	"github.com/bpoetzschke/bin.go/models"
@@ -13,7 +14,7 @@ import (
 
 const (
 	initialWordFile = "initial.txt"
-	concurrency     = 5
+	concurrency     = 1
 )
 
 type WordManager interface {
@@ -21,12 +22,17 @@ type WordManager interface {
 	GetGifForWord(word string) (string, error)
 }
 
-func NewWordManager() WordManager {
-	wm := wordManager{
-		gifGenerator: gif.NewGiphy(),
+func NewWordManager() (WordManager, error) {
+	gifGenerator, err := gif.NewGiphy()
+	if err != nil {
+		return nil, err
 	}
 
-	return &wm
+	wm := wordManager{
+		gifGenerator: gifGenerator,
+	}
+
+	return &wm, nil
 }
 
 type wordManager struct {
@@ -77,9 +83,9 @@ func (wm *wordManager) LoadInitialWords() []models.Word {
 
 				if !found {
 					logger.Info("Could not find gif for word %q.", wordList[i])
+				} else {
+					logger.Debug("Loaded word: %q, url %q", wordList[i], url)
 				}
-
-				logger.Debug("Loaded word: %q, url %q", wordList[i], url)
 
 				wordMutex.Lock()
 				words = append(words, models.Word{
@@ -87,7 +93,7 @@ func (wm *wordManager) LoadInitialWords() []models.Word {
 					GifUrl: url,
 				})
 				wordMutex.Unlock()
-
+				<-time.After(500 * time.Millisecond)
 			}
 
 			waitGroup.Done()

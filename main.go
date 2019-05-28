@@ -49,15 +49,21 @@ func main() {
 		setDebug()
 	}
 
-	game, err := game.NewGameLoop(
+	wm, err := word_manager.NewWordManager()
+	if err != nil {
+		logger.Error("Failed to create word manager. Error: %s", err)
+		return
+	}
+
+	g, err := game.NewGameLoop(
 		mw,
 		storage.NewInMemoryStorage(),
-		word_manager.NewWordManager(),
+		wm,
 	)
 	if err != nil {
 		logger.Error("Error while starting game. %s", err)
 		return
 	}
 
-	game.Run()
+	g.Run()
 }

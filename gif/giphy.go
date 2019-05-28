@@ -6,10 +6,13 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
+	"os"
+
+	"github.com/bpoetzschke/bin.go/logger"
 )
 
 const (
-	giphyBaseURI   = "http://api.giphy.com/v1/gifs/%s?api_key=dc6zaTOxFJmzC%s"
+	giphyBaseURI   = "http://api.giphy.com/v1/gifs/%s?api_key=%s%s"
 	giphyRandomApi = "random"
 )
 
@@ -18,19 +21,29 @@ type HTTPDoer interface {
 	Do(req *http.Request) (resp *http.Response, err error)
 }
 
-func NewGiphy() Gif {
+func NewGiphy() (Gif, error) {
+
+	apiKey := os.Getenv("GIPHY_API_KEY")
+	if apiKey == "" {
+		err := fmt.Errorf("giphy api key is not set.")
+		logger.Error("%s", err)
+		return nil, err
+	}
+
 	return &giphy{
 		httpClient: http.DefaultClient,
-	}
+		apiKey:     apiKey,
+	}, nil
 }
 
 type giphy struct {
 	httpClient HTTPDoer
+	apiKey     string
 }
 
 type giphyResponse struct {
 	RawData interface{} `json:"data"`
-	Meta giphyMeta  `json:"meta"`
+	Meta    giphyMeta   `json:"meta"`
 }
 
 type giphyData struct {
@@ -47,7 +60,7 @@ func (g *giphy) Random(searchQuery string) (string, bool, error) {
 
 func (g *giphy) doRequest(api string, searchQuery string) (string, bool, error) {
 
-	callURI := fmt.Sprintf(giphyBaseURI, api, searchQuery)
+	callURI := fmt.Sprintf(giphyBaseURI, api, g.apiKey, searchQuery)
 
 	req, err := http.NewRequest("GET", callURI, nil)
 	if err != nil {
