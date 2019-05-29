@@ -14,7 +14,7 @@ import (
 
 const (
 	initialWordFile = "initial.txt"
-	concurrency     = 1
+	concurrency     = 2
 )
 
 type WordManager interface {
@@ -93,7 +93,7 @@ func (wm *wordManager) LoadInitialWords() []models.Word {
 					GifUrl: url,
 				})
 				wordMutex.Unlock()
-				<-time.After(500 * time.Millisecond)
+				<-time.After(100 * time.Millisecond)
 			}
 
 			waitGroup.Done()
