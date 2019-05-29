@@ -1,6 +1,7 @@
 package game
 
 import (
+	"fmt"
 	"strings"
 	"time"
 
@@ -104,7 +105,7 @@ func (gl *gameLoop) startNewGame() error {
 }
 
 func (gl *gameLoop) handleChannelMessage(msg *slack_middleware.IncomingMessage) {
-	var foundWords []models.Word
+	foundWords := models.WordList{}
 
 	for _, word := range gl.currentGame.RemainingWords {
 		if strings.Contains(strings.ToLower(msg.Message), strings.ToLower(word.Value)) {
@@ -131,7 +132,7 @@ func (gl *gameLoop) handleChannelMessage(msg *slack_middleware.IncomingMessage) 
 
 	answer := slack_middleware.OutgoingMessage{
 		BaseMessage: slack_middleware.BaseMessage{
-			Message: "hallo",
+			Message: fmt.Sprintf("Bingo! <@%s> said: %s.\n\nThere are %d more words to discover", msg.UserID, foundWords.Join(", "), len(gl.currentGame.RemainingWords)),
 			Channel: msg.Channel,
 		},
 	}
