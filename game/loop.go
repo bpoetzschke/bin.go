@@ -130,6 +130,9 @@ func (gl *gameLoop) handleChannelMessage(msg *slack_middleware.IncomingMessage) 
 		logger.Error("Error while reacting to message %#v. Error: %s", msg, err)
 	}
 
+	gl.currentGame.RemainingWords = gl.currentGame.RemainingWords.Diff(foundWords)
+	gl.currentGame.FoundWords = append(gl.currentGame.FoundWords, foundWords...)
+
 	answer := slack_middleware.OutgoingMessage{
 		BaseMessage: slack_middleware.BaseMessage{
 			Message: fmt.Sprintf("Bingo! <@%s> said: %s.\n\nThere are %d more words to discover", msg.UserID, foundWords.Join(", "), len(gl.currentGame.RemainingWords)),
@@ -141,7 +144,10 @@ func (gl *gameLoop) handleChannelMessage(msg *slack_middleware.IncomingMessage) 
 		answer.Attachments = append(answer.Attachments, found.GifUrl)
 	}
 
-	gl.slackMW.PostMessage(answer)
+	if err := gl.slackMW.PostMessage(answer); err != nil {
+		logger.Error("Failed to post message. Errors: %s", err)
+		return
+	}
 }
 
 func (gl *gameLoop) react(emoji string, msg *slack_middleware.IncomingMessage) error {
