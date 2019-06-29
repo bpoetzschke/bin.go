@@ -65,6 +65,8 @@ func (gl *gameLoop) Run() {
 		switch message.Type {
 		case slack_middleware.MessageTypeChannelMessage:
 			gl.handleChannelMessage(message)
+		case slack_middleware.MessageTypeDirectMessage:
+			gl.handleDirectMessage(message)
 		}
 	}
 }
@@ -130,6 +132,7 @@ func (gl *gameLoop) handleChannelMessage(msg *slack_middleware.IncomingMessage) 
 		logger.Error("Error while reacting to message %#v. Error: %s", msg, err)
 	}
 
+	// TODO implement storage method agnostic
 	gl.currentGame.RemainingWords = gl.currentGame.RemainingWords.Diff(foundWords)
 	gl.currentGame.FoundWords = append(gl.currentGame.FoundWords, foundWords...)
 
@@ -147,6 +150,28 @@ func (gl *gameLoop) handleChannelMessage(msg *slack_middleware.IncomingMessage) 
 	if err := gl.slackMW.PostMessage(answer); err != nil {
 		logger.Error("Failed to post message. Errors: %s", err)
 		return
+	}
+}
+
+func (gl *gameLoop) handleDirectMessage(msg *slack_middleware.IncomingMessage) {
+	if strings.ToLower(msg.Message) == "cheat" {
+		if err := msg.React("see_no_evil"); err != nil {
+			logger.Error("Error while reacting to message %#v. Error: %s", msg, err)
+		}
+
+		answer := slack_middleware.OutgoingMessage{
+			BaseMessage: slack_middleware.BaseMessage{
+				Message: gl.currentGame.RemainingWords.Join(", "),
+				Channel: msg.Channel,
+			},
+		}
+
+		if err := gl.slackMW.PostMessage(answer); err != nil {
+			logger.Error("Failed to post message. Errors: %s", err)
+			return
+		}
+	} else if strings.HasPrefix(strings.ToLower(msg.Message), "add") {
+
 	}
 }
 
