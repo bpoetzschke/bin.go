@@ -11,7 +11,7 @@ run:
 	go run main.go
 
 test:
-	go test ./...
+	go test ./... -race
 
 run-infra:
 	docker run -d -p 5432:5432 \
