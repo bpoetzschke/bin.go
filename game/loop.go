@@ -11,7 +11,7 @@ import (
 	"github.com/bpoetzschke/bin.go/models"
 	slack_middleware "github.com/bpoetzschke/bin.go/slack-middleware"
 	"github.com/bpoetzschke/bin.go/storage"
-	"github.com/bpoetzschke/bin.go/word_manager"
+	"github.com/bpoetzschke/bin.go/helper"
 )
 
 type GameLoop interface {
@@ -21,7 +21,7 @@ type GameLoop interface {
 func NewGameLoop(
 	slackMW slack_middleware.Middleware,
 	storage storage.Storage,
-	wordManager word_manager.WordManager,
+	wordManager helper.WordManager,
 ) (GameLoop, error) {
 	gl := gameLoop{
 		slackMW:     slackMW,
@@ -38,7 +38,7 @@ func NewGameLoop(
 
 type gameLoop struct {
 	slackMW     slack_middleware.Middleware
-	wordManager word_manager.WordManager
+	wordManager helper.WordManager
 	storage     storage.Storage
 	currentGame *models.Game
 }
@@ -89,6 +89,13 @@ func (gl *gameLoop) startNewGame() error {
 
 	if len(words) == 0 {
 		words = gl.wordManager.LoadInitialWords()
+
+	}
+
+	for _, word := range words {
+		if _, _, err := gl.storage.AddWord(word); err != nil {
+			logger.Error("Failed to add word %#v. Error: %s", word, err)
+		}
 	}
 
 	logger.Debug("Starting new game.")
@@ -122,13 +129,13 @@ func (gl *gameLoop) handleChannelMessage(msg *slack_middleware.IncomingMessage) 
 
 	if len(foundWords) == 0 {
 		logger.Debug("Didn't found any word in message:\n%s", msg.Message)
-		if err := gl.react("speak_no_evil", msg); err != nil {
+		if err := msg.React("speak_no_evil"); err != nil {
 			logger.Error("Error while reacting to message %#v. Error: %s", msg, err)
 		}
 		return
 	}
 
-	if err := gl.react("boom", msg); err != nil {
+	if err := msg.React("boom"); err != nil {
 		logger.Error("Error while reacting to message %#v. Error: %s", msg, err)
 	}
 
@@ -174,7 +181,55 @@ func (gl *gameLoop) handleDirectMessage(msg *slack_middleware.IncomingMessage) {
 			return
 		}
 	} else if strings.HasPrefix(strings.ToLower(msg.Message), "add") {
-		
+		rawWord := strings.Replace(msg.Message, "add", "", 1)
+		rawWord = strings.TrimSpace(rawWord)
+
+		word, err := gl.wordManager.GetWord(rawWord)
+		if err != nil {
+			return
+		}
+
+		word.AddedBy = msg.UserID
+
+		added, existingWord, err := gl.storage.AddWord(word)
+		if err != nil {
+			logger.Error("Failed to add word %q. %s", rawWord, err)
+		}
+
+		if !added {
+
+			logger.Info("Word %q already exists.", rawWord)
+			answerMessage := "Word %q was already added"
+			parameters := []interface{}{
+				rawWord,
+			}
+			if existingWord.AddedBy != "" {
+				answerMessage += " by <@%s>"
+				parameters = append(parameters, existingWord.AddedBy)
+			}
+			answerMessage += "."
+			answer := slack_middleware.OutgoingMessage{
+				BaseMessage: slack_middleware.BaseMessage{
+					Message: fmt.Sprintf(answerMessage, parameters...),
+					Channel: msg.Channel,
+				},
+			}
+
+			if err := gl.slackMW.PostMessage(answer); err != nil {
+				logger.Error("Failed to post message %#v. Error: %s", answer, err)
+			}
+			return
+		}
+
+		gl.currentGame.AddNewWord(word)
+		if err := msg.React("white_check_mark"); err != nil {
+			logger.Error("Error while reacting to message %#v. Error: %s", msg, err)
+			return
+		}
+	} else {
+		if err := msg.React("question"); err != nil {
+			logger.Error("Error while reacting to message %#v. Error: %s", msg, err)
+		}
 	}
 }
 
@@ -185,8 +240,4 @@ func (gl *gameLoop) save() error {
 	}
 
 	return nil
-}
-
-func (gl *gameLoop) react(emoji string, msg *slack_middleware.IncomingMessage) error {
-	return msg.React(emoji)
 }

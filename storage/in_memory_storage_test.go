@@ -21,14 +21,15 @@ func TestInMemoryWordStorage(t *testing.T) {
 
 	// adding a word
 	word1 := models.Word{Value: uuid.NewV4().String()}
-	success, err := ims.AddWord(word1)
+	success, _, err := ims.AddWord(word1)
 	require.NoError(t, err)
 	require.True(t, success)
 
 	// add same word again, this should fail
-	success, err = ims.AddWord(word1)
-	require.Error(t, err)
+	success, existingWord, err := ims.AddWord(word1)
+	require.NoError(t, err)
 	require.False(t, success)
+	require.EqualValues(t, word1, existingWord)
 
 	//retrieve word list and check if word exists
 	words, err = ims.LoadWordList()

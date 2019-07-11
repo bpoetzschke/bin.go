@@ -1,8 +1,6 @@
 package storage
 
 import (
-	"fmt"
-
 	"github.com/bpoetzschke/bin.go/models"
 )
 
@@ -33,15 +31,15 @@ func (ims *inMemoryStorage) LoadWordList() ([]models.Word, error) {
 	return wordList, nil
 }
 
-func (ims *inMemoryStorage) AddWord(word models.Word) (bool, error) {
-	_, found := ims.wordMap[word.Value]
+func (ims *inMemoryStorage) AddWord(word models.Word) (bool, models.Word, error) {
+	existingWord, found := ims.wordMap[word.Value]
 	if found {
-		return false, fmt.Errorf("word with value %s already exists", word.Value)
+		return false, existingWord, nil
 	}
 
 	ims.wordMap[word.Value] = word
 
-	return true, nil
+	return true, models.Word{}, nil
 }
 
 func (ims *inMemoryStorage) LoadCurrentGame() (models.Game, bool, error) {

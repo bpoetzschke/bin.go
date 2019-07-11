@@ -7,10 +7,10 @@ import (
 	"github.com/kelseyhightower/envconfig"
 
 	"github.com/bpoetzschke/bin.go/game"
+	"github.com/bpoetzschke/bin.go/helper"
 	"github.com/bpoetzschke/bin.go/logger"
 	smw "github.com/bpoetzschke/bin.go/slack-middleware"
 	"github.com/bpoetzschke/bin.go/storage"
-	"github.com/bpoetzschke/bin.go/word_manager"
 )
 
 type config struct {
@@ -49,7 +49,7 @@ func main() {
 		setDebug()
 	}
 
-	wm, err := word_manager.NewWordManager()
+	wm, err := helper.NewWordManager()
 	if err != nil {
 		logger.Error("Failed to create word manager. Error: %s", err)
 		return

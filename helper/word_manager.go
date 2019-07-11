@@ -1,4 +1,4 @@
-package word_manager
+package helper
 
 import (
 	"bufio"
@@ -19,6 +19,7 @@ const (
 
 type WordManager interface {
 	LoadInitialWords() []models.Word
+	GetWord(rawWord string) (models.Word, error)
 	GetGifForWord(word string) (string, error)
 }
 
@@ -106,6 +107,19 @@ func (wm *wordManager) LoadInitialWords() []models.Word {
 
 	waitGroup.Wait()
 	return words
+}
+
+func (wm *wordManager) GetWord(rawWord string) (models.Word, error) {
+	gifForWord, err := wm.GetGifForWord(rawWord)
+	if err != nil {
+		logger.Error("Failed to retrieve gif for word: %q. %s", rawWord, err)
+		return models.Word{}, err
+	}
+
+	return models.Word{
+		Value: rawWord,
+		GifUrl: gifForWord,
+	}, nil
 }
 
 func (wm *wordManager) loadFromInitialFile() ([]string, error) {

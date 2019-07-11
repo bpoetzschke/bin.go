@@ -60,3 +60,7 @@ type Game struct {
 	StartedAt      time.Time
 	FinishedAt     *time.Time
 }
+
+func (g *Game) AddNewWord(newWord Word) {
+	g.RemainingWords = append(g.RemainingWords, newWord)
+}
