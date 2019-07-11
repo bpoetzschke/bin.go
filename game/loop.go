@@ -132,9 +132,12 @@ func (gl *gameLoop) handleChannelMessage(msg *slack_middleware.IncomingMessage) 
 		logger.Error("Error while reacting to message %#v. Error: %s", msg, err)
 	}
 
-	// TODO implement storage method agnostic
 	gl.currentGame.RemainingWords = gl.currentGame.RemainingWords.Diff(foundWords)
 	gl.currentGame.FoundWords = append(gl.currentGame.FoundWords, foundWords...)
+
+	if err := gl.save(); err != nil {
+		return
+	}
 
 	answer := slack_middleware.OutgoingMessage{
 		BaseMessage: slack_middleware.BaseMessage{
@@ -171,8 +174,17 @@ func (gl *gameLoop) handleDirectMessage(msg *slack_middleware.IncomingMessage) {
 			return
 		}
 	} else if strings.HasPrefix(strings.ToLower(msg.Message), "add") {
-
+		
 	}
+}
+
+func (gl *gameLoop) save() error {
+	if err := gl.storage.SaveGame(*gl.currentGame); err != nil {
+		logger.Error("Error while saving current game. %s", err)
+		return err
+	}
+
+	return nil
 }
 
 func (gl *gameLoop) react(emoji string, msg *slack_middleware.IncomingMessage) error {
