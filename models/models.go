@@ -6,9 +6,9 @@ import (
 )
 
 type Word struct {
-	Value   string
-	AddedBy string
-	GifUrl  string
+	Value   string `json:"value"`
+	AddedBy string `json:"added_by"`
+	GifUrl  string `json:"gif_url"`
 }
 
 type WordList []Word
@@ -54,11 +54,11 @@ func (wl WordList) Diff(other WordList) WordList {
 }
 
 type Game struct {
-	ID             string
-	RemainingWords WordList
-	FoundWords     WordList
-	StartedAt      time.Time
-	FinishedAt     *time.Time
+	ID             string     `json:"id"`
+	RemainingWords WordList   `json:"remaining_words"`
+	FoundWords     WordList   `json:"found_words"`
+	StartedAt      time.Time  `json:"started_at"`
+	FinishedAt     *time.Time `json:"finished_at"`
 }
 
 func (g *Game) AddNewWord(newWord Word) {

@@ -14,12 +14,12 @@ import (
 )
 
 type config struct {
-	SlackToken string `split_words:"true"`
-	Debug      bool   `default:"false"`
+	SlackToken    string `split_words:"true"`
+	Debug         bool   `default:"false"`
+	StorageMethod string `split_words:"true"`
 }
 
 func parseConfig() (config, error) {
-
 	var cfg config
 	if err := envconfig.Process("", &cfg); err != nil {
 		return config{}, fmt.Errorf("Failed to parse environment config.\n%s\n", err)
@@ -57,7 +57,7 @@ func main() {
 
 	g, err := game.NewGameLoop(
 		mw,
-		storage.NewInMemoryStorage(),
+		storage.NewStorage(cfg.StorageMethod),
 		wm,
 	)
 	if err != nil {

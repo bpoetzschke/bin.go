@@ -1,5 +1,6 @@
 bin.go
 go-slack-bingo
+bin.go_save.json
 
 # Test binary, build with `go test -c`
 *.test

@@ -1,6 +1,23 @@
 package storage
 
-import "github.com/bpoetzschke/bin.go/models"
+import (
+	"github.com/bpoetzschke/bin.go/logger"
+	"github.com/bpoetzschke/bin.go/models"
+)
+
+type StorageMethod string
+
+const (
+	StorageMethodInMemory StorageMethod = "in_memory"
+	StorageMethodFile                   = "file"
+)
+
+type StorageFactory func() Storage
+
+var supportedStorageMethods = map[StorageMethod]StorageFactory{
+	StorageMethodInMemory: NewInMemoryStorage,
+	StorageMethodFile:     NewFileStorage,
+}
 
 type Storage interface {
 	WordStorage
@@ -22,6 +39,12 @@ type GameStorage interface {
 	SaveGame(models.Game) error
 }
 
-func NewStorage() Storage {
-	return NewInMemoryStorage()
+func NewStorage(storageMethod string) Storage {
+	factory, found := supportedStorageMethods[StorageMethod(storageMethod)]
+	if !found {
+		logger.Info("Storage method %q not found. Fallback to in memory", storageMethod)
+		return NewInMemoryStorage()
+	}
+
+	return factory()
 }
