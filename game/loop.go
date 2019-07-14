@@ -129,15 +129,11 @@ func (gl *gameLoop) handleChannelMessage(msg *slack_middleware.IncomingMessage) 
 
 	if len(foundWords) == 0 {
 		logger.Debug("Didn't found any word in message:\n%s", msg.Message)
-		if err := msg.React("speak_no_evil"); err != nil {
-			logger.Error("Error while reacting to message %#v. Error: %s", msg, err)
-		}
+		gl.react(msg, "speak_no_evil")
 		return
 	}
 
-	if err := msg.React("boom"); err != nil {
-		logger.Error("Error while reacting to message %#v. Error: %s", msg, err)
-	}
+	gl.react(msg, "boom")
 
 	gl.currentGame.RemainingWords = gl.currentGame.RemainingWords.Diff(foundWords)
 	gl.currentGame.FoundWords = append(gl.currentGame.FoundWords, foundWords...)
@@ -165,9 +161,7 @@ func (gl *gameLoop) handleChannelMessage(msg *slack_middleware.IncomingMessage) 
 
 func (gl *gameLoop) handleDirectMessage(msg *slack_middleware.IncomingMessage) {
 	if strings.ToLower(msg.Message) == "cheat" {
-		if err := msg.React("see_no_evil"); err != nil {
-			logger.Error("Error while reacting to message %#v. Error: %s", msg, err)
-		}
+		gl.react(msg, "see_no_evil")
 
 		answer := slack_middleware.OutgoingMessage{
 			BaseMessage: slack_middleware.BaseMessage{
@@ -194,6 +188,7 @@ func (gl *gameLoop) handleDirectMessage(msg *slack_middleware.IncomingMessage) {
 		added, existingWord, err := gl.storage.AddWord(word)
 		if err != nil {
 			logger.Error("Failed to add word %q. %s", rawWord, err)
+			return
 		}
 
 		if !added {
@@ -222,14 +217,15 @@ func (gl *gameLoop) handleDirectMessage(msg *slack_middleware.IncomingMessage) {
 		}
 
 		gl.currentGame.AddNewWord(word)
-		if err := msg.React("white_check_mark"); err != nil {
-			logger.Error("Error while reacting to message %#v. Error: %s", msg, err)
-			return
-		}
+		gl.react(msg, "white_check_mark")
 	} else {
-		if err := msg.React("question"); err != nil {
-			logger.Error("Error while reacting to message %#v. Error: %s", msg, err)
-		}
+		gl.react(msg, "question")
+	}
+}
+
+func (gl *gameLoop) react(msg *slack_middleware.IncomingMessage, reactions ...string) {
+	if err := msg.React(reactions...); err != nil {
+		logger.Error("Error while reacting to message %#v. Error: %s", msg, err)
 	}
 }
 
