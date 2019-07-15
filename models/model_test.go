@@ -36,3 +36,28 @@ func TestWordList_Diff(t *testing.T) {
 	res_2 := b.Diff(a)
 	require.EqualValues(t, expected, res_2)
 }
+
+func TestWordList_Join(t *testing.T) {
+	a := WordList{
+		{
+			Value: "1",
+		},
+		{
+			Value: "2",
+		},
+	}
+
+	require.EqualValues(t, "1,2", a.Join(","))
+}
+
+func TestGame_AddNewWord(t *testing.T) {
+	g := Game{
+		RemainingWords: WordList{},
+	}
+
+	require.EqualValues(t, WordList{}, g.RemainingWords)
+
+	g.AddNewWord(Word{Value: "1"})
+
+	require.EqualValues(t, WordList{Word{Value: "1"}}, g.RemainingWords)
+}
