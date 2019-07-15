@@ -5,6 +5,8 @@ import (
 	"io/ioutil"
 	"strings"
 
+	"github.com/bpoetzschke/bin.go/logger"
+
 	"github.com/bpoetzschke/bin.go/models"
 )
 
@@ -77,6 +79,7 @@ func (fs fileStorage) loadFile() fileModel {
 	}
 
 	if err := json.Unmarshal(bytes, &content); err != nil {
+		logger.Warning("Failed to unmarshal content of save file. Returning default content. Error: %s", err)
 		return content
 	}
 
