@@ -26,7 +26,7 @@ type middleware struct {
 	slackToken string
 
 	slackApi *slack.Client
-	slackRTM *slack.RTM
+	slackRTM SlackRTM
 
 	eventChannel chan *IncomingMessage
 	botInfo      *BotInfo
@@ -36,16 +36,16 @@ type middleware struct {
 func (mw *middleware) init() {
 	mw.slackApi = slack.New(mw.slackToken)
 	mw.eventChannel = make(chan *IncomingMessage, 1)
+	mw.slackRTM = NewSlackRTM(mw.slackApi.NewRTM())
 }
 
 func (mw *middleware) Connect() <-chan *IncomingMessage {
-	mw.slackRTM = mw.slackApi.NewRTM()
 	go mw.slackRTM.ManageConnection()
 
 	go func() {
 		for {
 			select {
-			case evt := <-mw.slackRTM.IncomingEvents:
+			case evt := <-mw.slackRTM.IncomingEvents():
 				switch evt.Data.(type) {
 				case *slack.ConnectedEvent:
 					mw.handleConnect(evt.Data)

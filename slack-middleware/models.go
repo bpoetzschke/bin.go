@@ -4,6 +4,13 @@ import (
 	"github.com/nlopes/slack"
 )
 
+type SlackRTM interface {
+	AddReaction(name string, item slack.ItemRef) error
+	PostMessage(channelID string, options ...slack.MsgOption) (string, string, error)
+	ManageConnection()
+	IncomingEvents() chan slack.RTMEvent
+}
+
 type BotInfo struct {
 	Name string
 	ID   string
@@ -28,7 +35,7 @@ type IncomingMessage struct {
 	Type      MessageType
 	Timestamp string
 	UserID    string
-	rtm       *slack.RTM
+	rtm       SlackRTM
 }
 
 type OutgoingMessage struct {
