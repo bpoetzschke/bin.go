@@ -25,6 +25,10 @@ type SlackRTMMock struct {
 	mock.Mock
 }
 
+func (m *SlackRTMMock) NewConnection(token string, options ...slack.Option) *slack.Client {
+	return m.Called(token, options).Get(0).(*slack.Client)
+}
+
 func (m *SlackRTMMock) AddReaction(name string, item slack.ItemRef) error {
 	return m.Called(name, item).Error(0)
 }

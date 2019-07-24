@@ -5,6 +5,7 @@ import (
 )
 
 type SlackRTM interface {
+	NewConnection(token string, options ...slack.Option) *slack.Client
 	AddReaction(name string, item slack.ItemRef) error
 	PostMessage(channelID string, options ...slack.MsgOption) (string, string, error)
 	ManageConnection()
@@ -22,7 +23,7 @@ const (
 	MessageTypeDirectMessage  = MessageType("direct_message")
 	MessageTypeSelfMessage    = MessageType("self_message")
 	MessageTypeChannelMessage = MessageType("channel_message")
-	MessageTypeUnknowMessage  = MessageType("unknown")
+	MessageTypeUnknownMessage = MessageType("unknown")
 )
 
 type BaseMessage struct {

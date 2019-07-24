@@ -2,7 +2,10 @@ package slack_middleware
 
 import "github.com/nlopes/slack"
 
-func NewSlackRTM(rtm *slack.RTM) SlackRTM {
+func NewSlackRTM(slackToken string) SlackRTM {
+	slackClient := slack.New(slackToken)
+	rtm := slackClient.NewRTM()
+
 	return &slackRTM{
 		rtm: rtm,
 	}
@@ -10,6 +13,10 @@ func NewSlackRTM(rtm *slack.RTM) SlackRTM {
 
 type slackRTM struct {
 	rtm *slack.RTM
+}
+
+func (r slackRTM) NewConnection(token string, options ...slack.Option) *slack.Client {
+	return slack.New(token, options...)
 }
 
 func (r slackRTM) AddReaction(name string, item slack.ItemRef) error {

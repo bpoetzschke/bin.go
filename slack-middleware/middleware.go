@@ -34,9 +34,8 @@ type middleware struct {
 }
 
 func (mw *middleware) init() {
-	mw.slackApi = slack.New(mw.slackToken)
+	mw.slackRTM = NewSlackRTM(mw.slackToken)
 	mw.eventChannel = make(chan *IncomingMessage, 1)
-	mw.slackRTM = NewSlackRTM(mw.slackApi.NewRTM())
 }
 
 func (mw *middleware) Connect() <-chan *IncomingMessage {
@@ -107,7 +106,7 @@ func (mw *middleware) handleMessageEvent(payload interface{}) {
 		return
 	}
 
-	var messageType = MessageTypeUnknowMessage
+	var messageType = MessageTypeUnknownMessage
 
 	if strings.HasPrefix(rawMsg.Channel, "D") {
 		if rawMsg.User == mw.botInfo.ID {
